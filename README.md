@@ -1,7 +1,7 @@
 <div align="center">
 
   <!-- HERO BANNER -->
-  <img src="https://via.placeholder.com/1200x400/0A0A0A/00ff9d?text=SOVR+EMPIRE+%7C+MECHANICAL+TRUTH" alt="SOVR Empire Banner" width="100%" style="border-radius: 12px; margin-bottom: 20px;">
+  <img src="./src/assets/images/dashboard_mockup_1782945194433.jpg" alt="SOVR Empire Banner" width="100%" style="border-radius: 12px; margin-bottom: 20px;">
 
   <h1>
     <span style="color: #00ff9d;">SOVR</span> EMPIRE
@@ -111,7 +111,7 @@ The Company maintains a robust capital structure aligned with growth and liquidi
 ### 📊 Ecosystem Stats
 
 <div align="center">
-  <img src="https://github-readme-stats.vercel.app/api?username=StavoMidnite661&show_icons=true&theme=tokyonight&bg_color=0A0A0A&title_color=00ff9d&text_color=FFFFFF&icon_color=ffd700" alt="GitHub Stats" />
+  <img src="https://github-readme-stats.vercel.app/api?username=StavoMidnite661&show_icons=true&theme=tokyonight&bg_color=0A0A0A&title_color=00ff9d&text_color=FFFFFF&icon_color=ffd700" alt="GitHub Stats">
   <br>
   <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=StavoMidnite661&layout=compact&theme=tokyonight&bg_color=0A0A0A&title_color=00ff9d&text_color=FFFFFF" alt="Top Languages" />
 </div>
@@ -120,7 +120,7 @@ The Company maintains a robust capital structure aligned with growth and liquidi
 
 ### ⚖️ Discharge Protocols
 
-We adhere to **House Joint Resolution 192** and **UCC § 3-603**, treating private credit as a "prepaid asset." All transactions are cleared by set-off, eliminating the need for interest-bearing debt and aligning with **Statutory Accounting Principles (SSAP)**.
+We adhere to **House Joint Resolution 192** and **UCC § 3-603**, treating private credit as a "prepaid asset." All transactions are cleared by set-off, eliminating the need for interest-bearing debt [...]
 
 ---
 
