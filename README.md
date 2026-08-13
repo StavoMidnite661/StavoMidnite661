@@ -1,7 +1,7 @@
 <div align="center">
 
-  <!-- HERO BANNER -->
-  <img src="./src/assets/images/dashboard_mockup_1782945194433.jpg" alt="SOVR Empire Banner" width="100%" style="border-radius: 12px; margin-bottom: 20px;">
+  <!-- HERO LOGO -->
+  <img src="./src/assets/images/sovr-logo.png" alt="SOVR Empire" width="420" height="420">
 
   <h1>
     <span style="color: #00ff9d;">SOVR</span> EMPIRE
