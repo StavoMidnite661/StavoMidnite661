@@ -1,0 +1,91 @@
+projections:
+  - id: payments_summary
+    name: Payments
+    kind: aggregate
+    description: Payment order lifecycle totals across the event log.
+    updates:
+      - { event: PaymentOrderCreated, field: created, op: inc }
+      - { event: PaymentOrderSigned, field: signed, op: inc }
+      - { event: PaymentOrderAuthorized, field: authorized, op: inc }
+      - { event: PaymentOrderCancelled, field: cancelled, op: inc }
+      - { event: PaymentOrderRejected, field: rejected, op: inc }
+      - { event: SettlementExecuted, field: settled, op: inc }
+      - { event: SettlementExecuted, field: totalSettled, op: sum, from: amount }
+
+  - id: settlement_summary
+    name: Settlements
+    kind: aggregate
+    description: Settlement lifecycle and executed value.
+    updates:
+      - { event: SettlementProposed, field: proposed, op: inc }
+      - { event: SettlementStarted, field: started, op: inc }
+      - { event: SettlementExecuted, field: executed, op: inc }
+      - { event: SettlementExecuted, field: totalExecuted, op: sum, from: amount }
+      - { event: SettlementFailed, field: failed, op: inc }
+
+  - id: collateral_summary
+    name: Collateral
+    kind: aggregate
+    description: Collateral posted, released and liquidated.
+    updates:
+      - { event: CollateralPosted, field: posted, op: inc }
+      - { event: CollateralPosted, field: postedTotal, op: sum, from: amount }
+      - { event: CollateralReleased, field: released, op: inc }
+      - { event: CollateralReleased, field: releasedTotal, op: sum, from: amount }
+      - { event: LiquidationInitiated, field: liquidations, op: inc }
+      - { event: CollateralLiquidated, field: liquidated, op: inc }
+      - { event: CollateralLiquidated, field: liquidatedTotal, op: sum, from: recovered }
+
+  - id: credit_summary
+    name: Credit
+    kind: aggregate
+    description: Facilities, drawdowns and outstanding exposure.
+    updates:
+      - { event: FacilityCreated, field: facilities, op: inc }
+      - { event: CreditDrawn, field: draws, op: inc }
+      - { event: CreditDrawn, field: drawnTotal, op: sum, from: amount }
+      - { event: CreditDrawn, field: outstanding, op: sum, from: amount }
+      - { event: CreditRepaid, field: repays, op: inc }
+      - { event: CreditRepaid, field: repaidTotal, op: sum, from: amount }
+      - { event: CreditRepaid, field: outstanding, op: sub, from: amount }
+
+  - id: governance_summary
+    name: Governance
+    kind: aggregate
+    description: Proposals, votes and resolutions.
+    updates:
+      - { event: ProposalSubmitted, field: submitted, op: inc }
+      - { event: ProposalVoted, field: votes, op: inc }
+      - { event: ProposalPassed, field: passed, op: inc }
+      - { event: ProposalRejected, field: rejected, op: inc }
+
+  - id: ledger_summary
+    name: Ledger
+    kind: aggregate
+    description: Ledger accounts and double-entry transfer totals.
+    updates:
+      - { event: LedgerAccountCreated, field: accountsOpened, op: inc }
+      - { event: LedgerAccountCreated, field: openingTotal, op: sum, from: opening }
+      - { event: FundsTransferred, field: transfers, op: inc }
+      - { event: FundsTransferred, field: transferredTotal, op: sum, from: amount }
+
+  - id: auth_summary
+    name: Authorization
+    kind: aggregate
+    description: Grants, revokes and fail-closed denials.
+    updates:
+      - { event: CapabilityGranted, field: granted, op: inc }
+      - { event: CapabilityRevoked, field: revoked, op: inc }
+      - { event: AuthorizationDenied, field: denials, op: inc }
+      - { event: CommandRejected, field: rejections, op: inc }
+
+  - id: entity_census
+    name: Entity Census
+    kind: census
+    description: Live instance counts per state machine (read from the state registry).
+
+  - id: activity
+    name: Activity Timeline
+    kind: timeline
+    depth: 20
+    description: The most recent events across the system.

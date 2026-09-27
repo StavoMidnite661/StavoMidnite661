@@ -1,0 +1,61 @@
+# Identity corpus — who exists, and what they hold at genesis.
+# `constitutional: true` marks the system authority: it holds every
+# capability by constitution and its grants are immutable.
+identities:
+  - id: system
+    name: System Authority
+    kind: kernel
+    constitutional: true
+    capabilities: []
+
+  - id: operator
+    name: Operations
+    kind: operator
+    capabilities:
+      - identity:manage
+      - account:create
+      - account:control
+      - payment:initiate
+      - payment:sign
+      - payment:authorize
+      - settlement:execute
+      - collateral:manage
+      - credit:manage
+      - governance:propose
+      - governance:vote
+      - ledger:account
+      - ledger:transfer
+      - web3:sign
+      - sim:run
+
+  - id: treasury
+    name: Treasury
+    kind: treasury
+    capabilities:
+      - credit:manage
+      - settlement:execute
+      - governance:vote
+      - ledger:account
+      - ledger:transfer
+
+  - id: auditor
+    name: Audit
+    kind: auditor
+    capabilities:
+      - audit:read
+
+  - id: client-01
+    name: Client One
+    kind: client
+    capabilities:
+      - payment:initiate
+      - payment:sign
+      - credit:draw
+      - governance:vote
+
+  - id: client-02
+    name: Client Two
+    kind: client
+    capabilities:
+      - payment:initiate
+      - payment:sign
