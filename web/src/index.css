@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-void text-slate-200 font-sans antialiased;
+  background-image:
+    radial-gradient(1200px 500px at 80% -10%, rgba(51, 224, 255, 0.07), transparent 60%),
+    radial-gradient(900px 420px at 10% 110%, rgba(123, 97, 255, 0.06), transparent 60%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(51, 224, 255, 0.28);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1b4552 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #1b4552;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer components {
+  .panel {
+    @apply bg-panel/80 border border-edge rounded-xl backdrop-blur-sm;
+  }
+  .panel-glow {
+    @apply shadow-glow;
+  }
+  .h-title {
+    @apply text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400;
+  }
+  .mono {
+    @apply font-mono;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono border;
+  }
+  .chip-ok {
+    @apply chip text-ok border-ok/30 bg-ok/10;
+  }
+  .chip-bad {
+    @apply chip text-danger border-danger/30 bg-danger/10;
+  }
+  .chip-dim {
+    @apply chip text-slate-400 border-edge bg-panel2;
+  }
+  .chip-neon {
+    @apply chip text-neon border-neon/30 bg-neon/10;
+  }
+  .chip-web3 {
+    @apply chip text-web3 border-web3/30 bg-web3/10;
+  }
+  .chip-gold {
+    @apply chip text-gold border-gold/30 bg-gold/10;
+  }
+  .chip-amber {
+    @apply chip text-amber border-amber/30 bg-amber/10;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-150 border cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-neon {
+    @apply btn bg-neon/15 text-neon border-neon/40 hover:bg-neon/25 hover:shadow-glow;
+  }
+  .btn-ghost {
+    @apply btn bg-panel2 text-slate-300 border-edge hover:border-edge2 hover:text-white;
+  }
+  .btn-danger {
+    @apply btn bg-danger/10 text-danger border-danger/40 hover:bg-danger/20;
+  }
+  .btn-ok {
+    @apply btn bg-ok/10 text-ok border-ok/40 hover:bg-ok/20;
+  }
+  .input {
+    @apply w-full bg-abyss border border-edge rounded-lg px-3 py-2 text-[13px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-neon/50 focus:ring-1 focus:ring-neon/30;
+  }
+  .label {
+    @apply block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5;
+  }
+  .tbl {
+    @apply w-full text-[12.5px] font-mono;
+  }
+  .tbl th {
+    @apply text-left text-[10.5px] uppercase tracking-wider text-slate-500 font-sans font-semibold px-3 py-2 border-b border-edge sticky top-0 bg-panel z-10;
+  }
+  .tbl td {
+    @apply px-3 py-2 border-b border-edge/50 align-top;
+  }
+  .tbl tr:hover td {
+    @apply bg-panel2/50;
+  }
+  .dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full;
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.pulse {
+  animation: pulse-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(400%);
+  }
+}
+.scanline {
+  animation: scan 5s linear infinite;
+}

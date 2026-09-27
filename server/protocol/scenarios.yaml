@@ -1,0 +1,134 @@
+scenarios:
+  - id: S-01
+    name: Genesis Bootstrap
+    description: Register an identity, verify its wallet, create and activate an account, open its ledger account.
+    steps:
+      - { command: RegisterIdentity, actor: operator, payload: { identity: "client-a-{{run}}", name: "Client A", kind: client }, expect: ok }
+      - { command: VerifyWallet, actor: operator, payload: { wallet: "client-a-{{run}}" }, expect: ok }
+      - { command: CreateAccount, actor: operator, payload: { accountId: "acct-a-{{run}}", owner: "client-a-{{run}}", name: "Client A Account" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "acct-a-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "acct-a-{{run}}", name: "Client A Ledger", opening: 100000000 }, expect: ok }
+
+  - id: S-02
+    name: Signed Payment to Settlement
+    description: "Full happy path: fund accounts, create, sign, authorize, propose, begin and execute a settlement."
+    steps:
+      - { command: CreateAccount, actor: operator, payload: { accountId: "ps-payer-{{run}}", owner: operator, name: "Payer" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "ps-payer-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "ps-payer-{{run}}", name: "Payer Ledger", opening: 500000000 }, expect: ok }
+      - { command: CreateAccount, actor: operator, payload: { accountId: "ps-payee-{{run}}", owner: operator, name: "Payee" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "ps-payee-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "ps-payee-{{run}}", name: "Payee Ledger", opening: 0 }, expect: ok }
+      - { command: CreatePaymentOrder, actor: client-01, payload: { orderId: "po-{{run}}", payer: "ps-payer-{{run}}", payee: "ps-payee-{{run}}", amount: 25000000, memo: "service fee" }, expect: ok }
+      - { command: SignPaymentOrder, actor: client-01, payload: { orderId: "po-{{run}}" }, expect: ok }
+      - { command: AuthorizePaymentOrder, actor: operator, payload: { orderId: "po-{{run}}" }, expect: ok }
+      - { command: ProposeSettlement, actor: operator, payload: { settlementId: "st-{{run}}", orderId: "po-{{run}}" }, expect: ok }
+      - { command: BeginSettlement, actor: treasury, payload: { settlementId: "st-{{run}}", orderId: "po-{{run}}" }, expect: ok }
+      - { command: ExecuteSettlement, actor: treasury, payload: { orderId: "po-{{run}}" }, expect: ok }
+
+  - id: S-03
+    name: Authorization Boundary
+    description: An identity without payment:authorize or ledger:transfer is denied fail-closed.
+    steps:
+      - { command: CreateAccount, actor: operator, payload: { accountId: "ab-payer-{{run}}", owner: "client-02", name: "AB Payer" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "ab-payer-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "ab-payer-{{run}}", name: "AB Payer Ledger", opening: 10000000 }, expect: ok }
+      - { command: CreateAccount, actor: operator, payload: { accountId: "ab-payee-{{run}}", owner: "client-02", name: "AB Payee" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "ab-payee-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "ab-payee-{{run}}", name: "AB Payee Ledger", opening: 0 }, expect: ok }
+      - { command: CreatePaymentOrder, actor: client-02, payload: { orderId: "po-ab-{{run}}", payer: "ab-payer-{{run}}", payee: "ab-payee-{{run}}", amount: 1000000, memo: "boundary test" }, expect: ok }
+      - { command: SignPaymentOrder, actor: client-02, payload: { orderId: "po-ab-{{run}}" }, expect: ok }
+      - { command: AuthorizePaymentOrder, actor: client-02, payload: { orderId: "po-ab-{{run}}" }, expect: denied }
+      - { command: TransferFunds, actor: client-02, payload: { source: "ab-payer-{{run}}", destination: "ab-payee-{{run}}", amount: 1000, memo: "should be denied" }, expect: denied }
+
+  - id: S-04
+    name: State Machine Violation
+    description: Replaying Begin/Execute Settlement after completion is rejected by the state machine.
+    steps:
+      - { command: CreateAccount, actor: operator, payload: { accountId: "sm-payer-{{run}}", owner: operator, name: "SM Payer" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "sm-payer-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "sm-payer-{{run}}", name: "SM Payer Ledger", opening: 100000000 }, expect: ok }
+      - { command: CreateAccount, actor: operator, payload: { accountId: "sm-payee-{{run}}", owner: operator, name: "SM Payee" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "sm-payee-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "sm-payee-{{run}}", name: "SM Payee Ledger", opening: 0 }, expect: ok }
+      - { command: CreatePaymentOrder, actor: client-01, payload: { orderId: "po-sm-{{run}}", payer: "sm-payer-{{run}}", payee: "sm-payee-{{run}}", amount: 5000000, memo: "violation probe" }, expect: ok }
+      - { command: SignPaymentOrder, actor: client-01, payload: { orderId: "po-sm-{{run}}" }, expect: ok }
+      - { command: AuthorizePaymentOrder, actor: operator, payload: { orderId: "po-sm-{{run}}" }, expect: ok }
+      - { command: ProposeSettlement, actor: operator, payload: { settlementId: "st-sm-{{run}}", orderId: "po-sm-{{run}}" }, expect: ok }
+      - { command: BeginSettlement, actor: treasury, payload: { settlementId: "st-sm-{{run}}", orderId: "po-sm-{{run}}" }, expect: ok }
+      - { command: ExecuteSettlement, actor: treasury, payload: { orderId: "po-sm-{{run}}" }, expect: ok }
+      - { command: BeginSettlement, actor: treasury, payload: { settlementId: "st-sm-{{run}}", orderId: "po-sm-{{run}}" }, expect: rejected }
+      - { command: ExecuteSettlement, actor: treasury, payload: { orderId: "po-sm-{{run}}" }, expect: rejected }
+
+  - id: S-05
+    name: Collateral Cycle
+    description: Post collateral into the vault, then release it back to the owner.
+    steps:
+      - { command: CreateAccount, actor: operator, payload: { accountId: "co-{{run}}", owner: "client-01", name: "Collateral Owner" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "co-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "co-{{run}}", name: "Collateral Owner Ledger", opening: 200000000 }, expect: ok }
+      - { command: PostCollateral, actor: operator, payload: { positionId: "cp-{{run}}", accountId: "co-{{run}}", amount: 100000000, exposure: 0 }, expect: ok }
+      - { command: ReleaseCollateral, actor: operator, payload: { positionId: "cp-{{run}}" }, expect: ok }
+
+  - id: S-06
+    name: Credit Draw and Repay
+    description: Open a facility, draw 40 SOVR, repay in full — the facility closes repaid.
+    steps:
+      - { command: CreateFacility, actor: treasury, payload: { facilityId: "cf-{{run}}", borrower: "client-01", limit: 100000000 }, expect: ok }
+      - { command: ActivateFacility, actor: treasury, payload: { facilityId: "cf-{{run}}" }, expect: ok }
+      - { command: CreateAccount, actor: operator, payload: { accountId: "cr-{{run}}", owner: "client-01", name: "Credit Borrower" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "cr-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "cr-{{run}}", name: "Credit Borrower Ledger", opening: 10000000 }, expect: ok }
+      - { command: DrawCredit, actor: client-01, payload: { facilityId: "cf-{{run}}", obligationId: "ob-{{run}}", amount: 40000000, borrowerAccount: "cr-{{run}}" }, expect: ok }
+      - { command: RepayCredit, actor: treasury, payload: { facilityId: "cf-{{run}}", obligationId: "ob-{{run}}", amount: 40000000, borrowerAccount: "cr-{{run}}" }, expect: ok }
+
+  - id: S-07
+    name: Governance Passage
+    description: Submit a proposal, collect votes, resolve it as passed.
+    steps:
+      - { command: SubmitProposal, actor: operator, payload: { proposalId: "gp-{{run}}", title: "Raise settlement SLA to 200ms" }, expect: ok }
+      - { command: VoteProposal, actor: operator, payload: { proposalId: "gp-{{run}}", vote: yes }, expect: ok }
+      - { command: VoteProposal, actor: treasury, payload: { proposalId: "gp-{{run}}", vote: yes }, expect: ok }
+      - { command: VoteProposal, actor: client-01, payload: { proposalId: "gp-{{run}}", vote: no }, expect: ok }
+      - { command: ResolveProposal, actor: operator, payload: { proposalId: "gp-{{run}}", outcome: passed }, expect: ok }
+
+  - id: S-08
+    name: Liquidation
+    description: Breach the 95% utilization gate to liquidate; a low-utilization position is gate-rejected.
+    steps:
+      - { command: CreateAccount, actor: operator, payload: { accountId: "li-{{run}}", owner: "client-02", name: "Liquidation Owner" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "li-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "li-{{run}}", name: "Liquidation Owner Ledger", opening: 100000000 }, expect: ok }
+      - { command: PostCollateral, actor: operator, payload: { positionId: "li-cp-{{run}}", accountId: "li-{{run}}", amount: 50000000, exposure: 49000000 }, expect: ok }
+      - { command: InitiateLiquidation, actor: operator, payload: { positionId: "li-cp-{{run}}", reason: "utilization 98%" }, expect: ok }
+      - { command: LiquidateCollateral, actor: operator, payload: { positionId: "li-cp-{{run}}", treasuryAccount: treasury }, expect: ok }
+      - { command: PostCollateral, actor: operator, payload: { positionId: "li-cp2-{{run}}", accountId: "li-{{run}}", amount: 50000000, exposure: 10000000 }, expect: ok }
+      - { command: InitiateLiquidation, actor: operator, payload: { positionId: "li-cp2-{{run}}", reason: "utilization 20%" }, expect: rejected }
+
+  - id: S-09
+    name: Web3 Signed Settlement
+    description: An EIP-712 attestation verifies through the kernel and drives a real settlement.
+    steps:
+      - { command: CreateAccount, actor: operator, payload: { accountId: "wx-payer-{{run}}", owner: "client-01", name: "Web3 Payer" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "wx-payer-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "wx-payer-{{run}}", name: "Web3 Payer Ledger", opening: 100000000 }, expect: ok }
+      - { command: CreateAccount, actor: operator, payload: { accountId: "wx-payee-{{run}}", owner: "client-01", name: "Web3 Payee" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "wx-payee-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "wx-payee-{{run}}", name: "Web3 Payee Ledger", opening: 0 }, expect: ok }
+      - { command: CreatePaymentOrder, actor: client-01, payload: { orderId: "wx-po-{{run}}", payer: "wx-payer-{{run}}", payee: "wx-payee-{{run}}", amount: 30000000, memo: "attested payment" }, expect: ok }
+      - { command: SignPaymentOrder, actor: client-01, payload: { orderId: "wx-po-{{run}}" }, expect: ok }
+      - { command: AuthorizePaymentOrder, actor: operator, payload: { orderId: "wx-po-{{run}}" }, expect: ok }
+      - { command: ExecuteSignedSettlement, actor: operator, payload: { settlementId: "wx-st-{{run}}", orderId: "wx-po-{{run}}", signingKey: default }, expect: ok }
+      - { command: BeginSettlement, actor: treasury, payload: { settlementId: "wx-st-{{run}}", orderId: "wx-po-{{run}}" }, expect: ok }
+      - { command: ExecuteSettlement, actor: treasury, payload: { orderId: "wx-po-{{run}}" }, expect: ok }
+
+  - id: S-10
+    name: Replay Integrity
+    description: After real mutations, verify the hash chain, full replay reconstruction and the ledger invariants.
+    steps:
+      - { command: CreateAccount, actor: operator, payload: { accountId: "ri-{{run}}", owner: operator, name: "Replay Account" }, expect: ok }
+      - { command: ActivateAccount, actor: operator, payload: { accountId: "ri-{{run}}" }, expect: ok }
+      - { command: CreateLedgerAccount, actor: operator, payload: { accountId: "ri-{{run}}", name: "Replay Ledger", opening: 10000000 }, expect: ok }
+      - { verify: chain, expect: ok }
+      - { verify: replay, expect: ok }
+      - { verify: ledger, expect: ok }

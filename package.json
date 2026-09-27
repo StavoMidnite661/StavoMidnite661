@@ -1,0 +1,32 @@
+{
+  "name": "sovr-empire",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SOVR Empire — deterministic protocol compilation, event-driven execution, ledger-backed state.",
+  "scripts": {
+    "copy-assets": "node scripts/copy-assets.js",
+    "build:web": "npm run copy-assets && vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build": "npm run build:web && npm run build:server",
+    "start": "node server-dist/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "js-yaml": "^4.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.5.0",
+    "@types/react": "^18.3.4",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  }
+}

@@ -1,0 +1,74 @@
+capabilities:
+  - id: identity:manage
+    name: Manage Identity
+    domain: identity
+    description: Register, verify and revoke identities and wallets.
+  - id: account:create
+    name: Create Account
+    domain: accounts
+    description: Create operating accounts.
+  - id: account:control
+    name: Control Account
+    domain: accounts
+    description: Activate, freeze and close accounts.
+  - id: payment:initiate
+    name: Initiate Payment
+    domain: payments
+    description: Create and cancel payment orders.
+  - id: payment:sign
+    name: Sign Payment
+    domain: payments
+    description: Cryptographically sign payment orders.
+  - id: payment:authorize
+    name: Authorize Payment
+    domain: payments
+    description: Authorize signed payment orders for settlement.
+  - id: settlement:execute
+    name: Execute Settlement
+    domain: settlement
+    description: Propose, begin and execute settlements.
+  - id: collateral:manage
+    name: Manage Collateral
+    domain: collateral
+    description: Post, release and liquidate collateral positions.
+  - id: credit:manage
+    name: Manage Credit
+    domain: credit
+    description: Create and control credit facilities.
+  - id: credit:draw
+    name: Draw Credit
+    domain: credit
+    description: Draw funds against an active facility.
+  - id: governance:propose
+    name: Propose
+    domain: governance
+    description: Submit governance proposals.
+  - id: governance:vote
+    name: Vote
+    domain: governance
+    description: Cast votes and resolve proposals.
+  - id: ledger:account
+    name: Ledger Accounts
+    domain: ledger
+    description: Create ledger accounts at the ledger boundary.
+  - id: ledger:transfer
+    name: Ledger Transfer
+    domain: ledger
+    description: Post double-entry transfers.
+  - id: authz:grant
+    name: Grant Capability
+    domain: authz
+    meta: true
+    description: Grant and revoke capabilities. Meta authority — restricted to the system identity.
+  - id: audit:read
+    name: Audit Read
+    domain: authz
+    description: Read audit evidence and event history.
+  - id: web3:sign
+    name: Web3 Signing
+    domain: web3
+    description: Produce EIP-712 attestations.
+  - id: sim:run
+    name: Run Simulations
+    domain: system
+    description: Execute protocol simulation scenarios.

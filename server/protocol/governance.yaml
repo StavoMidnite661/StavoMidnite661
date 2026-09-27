@@ -1,0 +1,32 @@
+gates:
+  - id: G-001
+    name: Maximum Transfer Limit
+    rule: max_amount
+    limit: 500000000000000
+    description: A single operation may not move more than 500,000 SOVR in one posting.
+  - id: G-002
+    name: No Self-Settlement
+    rule: no_self_settlement
+    refs: { machine: settlement, field: proposer }
+    description: The actor executing a settlement must differ from the settlement proposer.
+  - id: G-003
+    name: Credit Headroom
+    rule: credit_headroom
+    refs: { machine: credit_facility, limitField: limit, outstandingField: outstanding }
+    description: A drawdown may not push facility outstanding beyond the facility limit.
+  - id: G-004
+    name: Liquidation Utilization
+    rule: liquidation_utilization
+    threshold: 0.95
+    refs: { machine: collateral_position, exposureField: exposure, amountField: amount }
+    description: Liquidation may only be initiated when exposure utilization is at or above 95%.
+  - id: G-005
+    name: Meta-Grant Protection
+    rule: meta_grant_protection
+    refs: { metaCapability: authz:grant }
+    description: The authz:grant meta capability cannot be granted or revoked except by the system identity.
+  - id: G-006
+    name: Repay Within Outstanding
+    rule: repay_within_outstanding
+    refs: { machine: credit_facility, outstandingField: outstanding }
+    description: A repayment may not exceed the facility's outstanding balance.

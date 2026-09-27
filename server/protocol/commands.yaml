@@ -1,0 +1,485 @@
+commands:
+  # ------------------------------------------------ identity
+  - id: RegisterIdentity
+    name: Register Identity
+    domain: identity
+    description: Register a new identity and open its wallet lifecycle.
+    capabilities: [identity:manage]
+    payload: { identity: string, name: string, kind: string }
+    creates: { machine: wallet, idFrom: "@identity" }
+    emits:
+      - { event: IdentityRegistered }
+
+  - id: VerifyWallet
+    name: Verify Wallet
+    domain: identity
+    description: Verify a wallet after identity registration.
+    capabilities: [identity:manage]
+    payload: { wallet: string }
+    preconditions:
+      - { machine: wallet, idFrom: "@wallet", inStates: [created] }
+    emits:
+      - { event: WalletVerified, payload: { address: "derived.address(@wallet)" } }
+
+  - id: RevokeIdentity
+    name: Revoke Identity
+    domain: identity
+    description: Revoke a wallet and its execution standing.
+    capabilities: [identity:manage]
+    payload: { wallet: string }
+    preconditions:
+      - { machine: wallet, idFrom: "@wallet", inStates: [created, verified] }
+    emits:
+      - { event: WalletRevoked }
+
+  # ------------------------------------------------ accounts
+  - id: CreateAccount
+    name: Create Account
+    domain: accounts
+    description: Create an operating account in the proposed state.
+    capabilities: [account:create]
+    payload: { accountId: string, owner: string, name: string }
+    creates: { machine: account, idFrom: "@accountId" }
+    emits:
+      - { event: AccountCreated }
+
+  - id: ActivateAccount
+    name: Activate Account
+    domain: accounts
+    description: Activate a proposed account so it can participate in workflows.
+    capabilities: [account:control]
+    payload: { accountId: string }
+    preconditions:
+      - { machine: account, idFrom: "@accountId", inStates: [proposed] }
+    emits:
+      - { event: AccountActivated }
+
+  - id: FreezeAccount
+    name: Freeze Account
+    domain: accounts
+    description: Freeze an active account pending investigation.
+    capabilities: [account:control]
+    payload: { accountId: string, reason: string }
+    preconditions:
+      - { machine: account, idFrom: "@accountId", inStates: [active] }
+    emits:
+      - { event: AccountFrozen }
+
+  - id: CloseAccount
+    name: Close Account
+    domain: accounts
+    description: Close an account; it can no longer be used.
+    capabilities: [account:control]
+    payload: { accountId: string, reason: string }
+    preconditions:
+      - { machine: account, idFrom: "@accountId", inStates: [active, frozen] }
+    emits:
+      - { event: AccountClosed }
+
+  # ------------------------------------------------ payments
+  - id: CreatePaymentOrder
+    name: Create Payment Order
+    domain: payments
+    description: Create a payment order between two active accounts.
+    capabilities: [payment:initiate]
+    payload: { orderId: string, payer: string, payee: string, amount: amount, memo: string }
+    preconditions:
+      - { machine: account, idFrom: "@payer", inStates: [active] }
+      - { machine: account, idFrom: "@payee", inStates: [active] }
+    creates: { machine: payment_order, idFrom: "@orderId" }
+    dataEffects:
+      - { machine: payment_order, idFrom: "@orderId", field: payer, op: set, value: "@payer" }
+      - { machine: payment_order, idFrom: "@orderId", field: payee, op: set, value: "@payee" }
+      - { machine: payment_order, idFrom: "@orderId", field: amount, op: set, value: "@amount" }
+    emits:
+      - { event: PaymentOrderCreated }
+
+  - id: SignPaymentOrder
+    name: Sign Payment Order
+    domain: payments
+    description: Sign a payment order, producing a content-bound signature.
+    capabilities: [payment:sign]
+    payload: { orderId: string }
+    preconditions:
+      - { machine: payment_order, idFrom: "@orderId", inStates: [pending_signature] }
+    emits:
+      - { event: PaymentOrderSigned, payload: { signature: derived.signature, signer: actor } }
+
+  - id: AuthorizePaymentOrder
+    name: Authorize Payment Order
+    domain: payments
+    description: Authorize a signed payment order for settlement.
+    capabilities: [payment:authorize]
+    payload: { orderId: string }
+    sourceInstance: { machine: payment_order, idFrom: "@orderId", alias: order }
+    preconditions:
+      - { machine: payment_order, idFrom: "@orderId", inStates: [pending_authorization] }
+    gates:
+      - { id: G-001, amountFrom: "order.amount" }
+    emits:
+      - { event: PaymentOrderAuthorized }
+
+  - id: CancelPaymentOrder
+    name: Cancel Payment Order
+    domain: payments
+    description: Cancel a payment order before settlement.
+    capabilities: [payment:initiate]
+    payload: { orderId: string, reason: string }
+    preconditions:
+      - { machine: payment_order, idFrom: "@orderId", inStates: [pending_signature, pending_authorization] }
+    emits:
+      - { event: PaymentOrderCancelled }
+
+  - id: RejectPaymentOrder
+    name: Reject Payment Order
+    domain: payments
+    description: Reject a payment order by payment authority.
+    capabilities: [payment:authorize]
+    payload: { orderId: string, reason: string }
+    preconditions:
+      - { machine: payment_order, idFrom: "@orderId", inStates: [pending_signature, pending_authorization] }
+    emits:
+      - { event: PaymentOrderRejected }
+
+  # ------------------------------------------------ settlement
+  - id: ProposeSettlement
+    name: Propose Settlement
+    domain: settlement
+    description: Propose a settlement for an authorized payment order.
+    capabilities: [settlement:execute]
+    payload: { settlementId: string, orderId: string }
+    preconditions:
+      - { machine: payment_order, idFrom: "@orderId", inStates: [authorized] }
+    creates: { machine: settlement, idFrom: "@settlementId" }
+    dataEffects:
+      - { machine: settlement, idFrom: "@settlementId", field: proposer, op: set, value: actor }
+    emits:
+      - { event: SettlementProposed }
+
+  - id: BeginSettlement
+    name: Begin Settlement
+    domain: settlement
+    description: Begin executing a proposed settlement (no self-settlement).
+    capabilities: [settlement:execute]
+    payload: { settlementId: string, orderId: string }
+    sourceInstance: { machine: payment_order, idFrom: "@orderId", alias: order }
+    preconditions:
+      - { machine: settlement, idFrom: "@settlementId", inStates: [proposed] }
+      - { machine: payment_order, idFrom: "@orderId", inStates: [authorized] }
+    gates:
+      - { id: G-002, idFrom: "@settlementId" }
+    dataEffects:
+      - { machine: payment_order, idFrom: "@orderId", field: settlementId, op: set, value: "@settlementId" }
+    emits:
+      - { event: SettlementStarted }
+
+  - id: ExecuteSettlement
+    name: Execute Settlement
+    domain: settlement
+    description: "Execute a settling payment: post the double-entry ledger transfer."
+    capabilities: [settlement:execute]
+    payload: { orderId: string }
+    sourceInstance: { machine: payment_order, idFrom: "@orderId", alias: order }
+    preconditions:
+      - { machine: settlement, idFrom: "order.settlementId", inStates: [executing] }
+      - { machine: payment_order, idFrom: "@orderId", inStates: [settling] }
+    gates:
+      - { id: G-001, amountFrom: "order.amount" }
+    ledger:
+      kind: transfer
+      source: "order.payer"
+      destination: "order.payee"
+      amount: "order.amount"
+      memo: "settlement"
+    emits:
+      - { event: SettlementExecuted, payload: { settlementId: "order.settlementId", transferId: derived.transferId, amount: "order.amount" } }
+
+  - id: FailSettlement
+    name: Fail Settlement
+    domain: settlement
+    description: Fail a running settlement; the order is rejected fail-closed.
+    capabilities: [settlement:execute]
+    payload: { settlementId: string, orderId: string, reason: string }
+    preconditions:
+      - { machine: settlement, idFrom: "@settlementId", inStates: [executing] }
+      - { machine: payment_order, idFrom: "@orderId", inStates: [settling] }
+    emits:
+      - { event: SettlementFailed, payload: { orderId: "@orderId" } }
+
+  # ------------------------------------------------ collateral
+  - id: PostCollateral
+    name: Post Collateral
+    domain: collateral
+    description: Post collateral from an account into the collateral vault.
+    capabilities: [collateral:manage]
+    payload: { positionId: string, accountId: string, amount: amount, exposure: amount }
+    preconditions:
+      - { machine: account, idFrom: "@accountId", inStates: [active] }
+    creates: { machine: collateral_position, idFrom: "@positionId" }
+    dataEffects:
+      - { machine: collateral_position, idFrom: "@positionId", field: accountId, op: set, value: "@accountId" }
+      - { machine: collateral_position, idFrom: "@positionId", field: amount, op: set, value: "@amount" }
+      - { machine: collateral_position, idFrom: "@positionId", field: exposure, op: set, value: "@exposure" }
+    ledger:
+      kind: transfer
+      source: "@accountId"
+      destination: "collateral-vault"
+      amount: "@amount"
+      memo: "collateral post"
+    emits:
+      - { event: CollateralPosted }
+
+  - id: ReleaseCollateral
+    name: Release Collateral
+    domain: collateral
+    description: Release collateral from the vault back to its owner.
+    capabilities: [collateral:manage]
+    payload: { positionId: string }
+    sourceInstance: { machine: collateral_position, idFrom: "@positionId", alias: position }
+    preconditions:
+      - { machine: collateral_position, idFrom: "@positionId", inStates: [active] }
+    ledger:
+      kind: transfer
+      source: "collateral-vault"
+      destination: "position.accountId"
+      amount: "position.amount"
+      memo: "collateral release"
+    emits:
+      - { event: CollateralReleased, payload: { accountId: "position.accountId", amount: "position.amount" } }
+
+  - id: InitiateLiquidation
+    name: Initiate Liquidation
+    domain: collateral
+    description: Initiate liquidation when utilization breaches the constitutional threshold.
+    capabilities: [collateral:manage]
+    payload: { positionId: string, reason: string }
+    sourceInstance: { machine: collateral_position, idFrom: "@positionId", alias: position }
+    preconditions:
+      - { machine: collateral_position, idFrom: "@positionId", inStates: [active] }
+    gates:
+      - { id: G-004, idFrom: "@positionId" }
+    emits:
+      - { event: LiquidationInitiated }
+
+  - id: LiquidateCollateral
+    name: Liquidate Collateral
+    domain: collateral
+    description: Seize liquidating collateral into the treasury account.
+    capabilities: [collateral:manage]
+    payload: { positionId: string, treasuryAccount: string }
+    sourceInstance: { machine: collateral_position, idFrom: "@positionId", alias: position }
+    preconditions:
+      - { machine: collateral_position, idFrom: "@positionId", inStates: [liquidating] }
+    ledger:
+      kind: transfer
+      source: "collateral-vault"
+      destination: "@treasuryAccount"
+      amount: "position.amount"
+      memo: "liquidation"
+    emits:
+      - { event: CollateralLiquidated, payload: { recovered: "position.amount" } }
+
+  # ------------------------------------------------ credit
+  - id: CreateFacility
+    name: Create Credit Facility
+    domain: credit
+    description: Create a credit facility in the proposed state.
+    capabilities: [credit:manage]
+    payload: { facilityId: string, borrower: string, limit: amount }
+    creates: { machine: credit_facility, idFrom: "@facilityId" }
+    dataEffects:
+      - { machine: credit_facility, idFrom: "@facilityId", field: limit, op: set, value: "@limit" }
+      - { machine: credit_facility, idFrom: "@facilityId", field: outstanding, op: set, value: 0 }
+    emits:
+      - { event: FacilityCreated }
+
+  - id: ActivateFacility
+    name: Activate Credit Facility
+    domain: credit
+    description: Activate a facility so it may be drawn against.
+    capabilities: [credit:manage]
+    payload: { facilityId: string }
+    preconditions:
+      - { machine: credit_facility, idFrom: "@facilityId", inStates: [proposed] }
+    emits:
+      - { event: FacilityActivated }
+
+  - id: FreezeFacility
+    name: Freeze Credit Facility
+    domain: credit
+    description: Freeze a facility; drawdowns are suspended.
+    capabilities: [credit:manage]
+    payload: { facilityId: string, reason: string }
+    preconditions:
+      - { machine: credit_facility, idFrom: "@facilityId", inStates: [active] }
+    emits:
+      - { event: FacilityFrozen }
+
+  - id: DrawCredit
+    name: Draw Credit
+    domain: credit
+    description: Draw funds against an active facility, creating an obligation.
+    capabilities: [credit:draw]
+    payload: { facilityId: string, obligationId: string, amount: amount, borrowerAccount: string }
+    preconditions:
+      - { machine: credit_facility, idFrom: "@facilityId", inStates: [active] }
+    gates:
+      - { id: G-003, idFrom: "@facilityId", amountFrom: "@amount" }
+    creates: { machine: obligation, idFrom: "@obligationId" }
+    dataEffects:
+      - { machine: credit_facility, idFrom: "@facilityId", field: outstanding, op: add, value: "@amount" }
+    ledger:
+      kind: transfer
+      source: "treasury"
+      destination: "@borrowerAccount"
+      amount: "@amount"
+      memo: "credit draw"
+    emits:
+      - { event: CreditDrawn }
+
+  - id: RepayCredit
+    name: Repay Credit
+    domain: credit
+    description: Repay funds against a facility and discharge the obligation.
+    capabilities: [credit:manage]
+    payload: { facilityId: string, obligationId: string, amount: amount, borrowerAccount: string }
+    preconditions:
+      - { machine: credit_facility, idFrom: "@facilityId", inStates: [active] }
+      - { machine: obligation, idFrom: "@obligationId", inStates: [performing] }
+    gates:
+      - { id: G-006, idFrom: "@facilityId", amountFrom: "@amount" }
+    dataEffects:
+      - { machine: credit_facility, idFrom: "@facilityId", field: outstanding, op: sub, value: "@amount" }
+    ledger:
+      kind: transfer
+      source: "@borrowerAccount"
+      destination: "treasury"
+      amount: "@amount"
+      memo: "credit repay"
+    emits:
+      - { event: CreditRepaid }
+      - { event: ObligationDischarged }
+      - { event: FacilityRepaid, when: outstanding_zero }
+
+  # ------------------------------------------------ governance
+  - id: SubmitProposal
+    name: Submit Proposal
+    domain: governance
+    description: Submit a governance proposal for voting.
+    capabilities: [governance:propose]
+    payload: { proposalId: string, title: string }
+    creates: { machine: governance_proposal, idFrom: "@proposalId" }
+    dataEffects:
+      - { machine: governance_proposal, idFrom: "@proposalId", field: votes, op: set, value: [] }
+    emits:
+      - { event: ProposalSubmitted }
+
+  - id: VoteProposal
+    name: Vote Proposal
+    domain: governance
+    description: Cast a yes/no vote on an active proposal.
+    capabilities: [governance:vote]
+    payload: { proposalId: string, vote: string }
+    sourceInstance: { machine: governance_proposal, idFrom: "@proposalId", alias: proposal }
+    preconditions:
+      - { machine: governance_proposal, idFrom: "@proposalId", inStates: [active] }
+    dataEffects:
+      - { machine: governance_proposal, idFrom: "@proposalId", field: votes, op: push, value: "@vote" }
+    emits:
+      - { event: ProposalVoted, payload: { voter: actor } }
+
+  - id: ResolveProposal
+    name: Resolve Proposal
+    domain: governance
+    description: Resolve an active proposal as passed or rejected.
+    capabilities: [governance:vote]
+    payload: { proposalId: string, outcome: string }
+    preconditions:
+      - { machine: governance_proposal, idFrom: "@proposalId", inStates: [active] }
+    emits:
+      - { event: ProposalPassed, when: outcome_passed }
+      - { event: ProposalRejected, when: outcome_rejected }
+
+  # ------------------------------------------------ authz
+  - id: GrantCapability
+    name: Grant Capability
+    domain: authz
+    description: Grant a capability to an identity (meta authority is system-only).
+    capabilities: [authz:grant]
+    payload: { targetIdentity: string, capability: string }
+    gates:
+      - { id: G-005, capabilityFrom: "@capability" }
+    authz: { kind: grant, targetFrom: "@targetIdentity", capabilityFrom: "@capability" }
+    emits:
+      - { event: CapabilityGranted, payload: { identity: "@targetIdentity", grantedBy: actor } }
+
+  - id: RevokeCapability
+    name: Revoke Capability
+    domain: authz
+    description: Revoke a capability from an identity.
+    capabilities: [authz:grant]
+    payload: { targetIdentity: string, capability: string }
+    gates:
+      - { id: G-005, capabilityFrom: "@capability" }
+    authz: { kind: revoke, targetFrom: "@targetIdentity", capabilityFrom: "@capability" }
+    emits:
+      - { event: CapabilityRevoked, payload: { identity: "@targetIdentity", revokedBy: actor } }
+
+  # ------------------------------------------------ ledger
+  - id: CreateLedgerAccount
+    name: Create Ledger Account
+    domain: ledger
+    description: Open a double-entry ledger account at the ledger boundary.
+    capabilities: [ledger:account]
+    payload: { accountId: string, name: string, opening: amount }
+    gates:
+      - { id: G-001, amountFrom: "@opening" }
+    ledger:
+      kind: create_account
+      account: "@accountId"
+      name: "@name"
+      amount: "@opening"
+    emits:
+      - { event: LedgerAccountCreated }
+
+  - id: TransferFunds
+    name: Transfer Funds
+    domain: ledger
+    description: Post a double-entry transfer directly on the ledger.
+    capabilities: [ledger:transfer]
+    payload: { source: string, destination: string, amount: amount, memo: string }
+    gates:
+      - { id: G-001, amountFrom: "@amount" }
+    ledger:
+      kind: transfer
+      source: "@source"
+      destination: "@destination"
+      amount: "@amount"
+      memo: "@memo"
+    emits:
+      - { event: FundsTransferred, payload: { transferId: derived.transferId } }
+
+  # ------------------------------------------------ web3
+  - id: ExecuteSignedSettlement
+    name: Execute Signed Settlement
+    domain: web3
+    description: Verify an EIP-712 attestation and open the settlement it authorizes.
+    capabilities: [settlement:execute]
+    payload: { settlementId: string, orderId: string, signature: string, signer: string, timestamp: string }
+    sourceInstance: { machine: payment_order, idFrom: "@orderId", alias: order }
+    preconditions:
+      - { machine: payment_order, idFrom: "@orderId", inStates: [authorized] }
+    verify:
+      kind: eip712_attestation
+      fields:
+        orderId: "@orderId"
+        payer: "order.payer"
+        payee: "order.payee"
+        amount: "order.amount"
+        timestamp: "@timestamp"
+    creates: { machine: settlement, idFrom: "@settlementId" }
+    dataEffects:
+      - { machine: settlement, idFrom: "@settlementId", field: proposer, op: set, value: actor }
+    emits:
+      - { event: AttestationCreated, payload: { attestationId: derived.attestationId, digest: derived.digest, orderId: "@orderId", signer: "@signer", signature: "@signature" } }
+      - { event: SettlementProposed }

@@ -1,0 +1,8 @@
+node_modules/
+
+# runtime data (regenerated at boot)
+server-dist/data/
+web/public/
+
+*.log
+.DS_Store

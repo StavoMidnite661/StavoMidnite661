@@ -1,0 +1,61 @@
+protocol:
+  name: SOVR
+  version: "1.0.0"
+  unit:
+    name: microSOVR
+    base: 1000000
+  ledger:
+    genesisSupply: 1000000000000000
+    reserve: reserve
+    bootstrapAccounts:
+      - { id: treasury, name: Treasury, opening: 100000000000000 }
+      - { id: collateral-vault, name: Collateral Vault, opening: 0 }
+  web3:
+    domain:
+      name: SOVR Ledger
+      version: "1"
+      chainId: 31337
+      verifyingContract: 0x0000000000000000000000000000000000000001
+    primaryType: SettlementAttestation
+    types:
+      SettlementAttestation:
+        - { name: orderId, type: string }
+        - { name: payer, type: address }
+        - { name: payee, type: address }
+        - { name: amount, type: uint256 }
+        - { name: timestamp, type: uint256 }
+
+domains:
+  - id: identity
+    name: Identity
+    description: Identities, wallets and trust anchors.
+  - id: accounts
+    name: Accounts
+    description: Operating accounts and lifecycle control.
+  - id: payments
+    name: Payments
+    description: Payment orders, signing and authorization.
+  - id: settlement
+    name: Settlement
+    description: Settlement lifecycle and ledger posting.
+  - id: collateral
+    name: Collateral
+    description: Collateral positions, vaults and liquidation.
+  - id: credit
+    name: Credit
+    description: Credit facilities, drawdowns and obligations.
+  - id: governance
+    name: Governance
+    description: Proposals, voting and resolution.
+  - id: ledger
+    name: Ledger
+    description: Double-entry financial ledger boundary.
+  - id: authz
+    name: Authorization
+    description: Capabilities and grant management.
+  - id: web3
+    name: Web3
+    description: EIP-712 attestations and signed settlement.
+  - id: system
+    name: System
+    description: Kernel, simulation and cross-cutting concerns.

@@ -1,0 +1,217 @@
+events:
+  # identity
+  - id: IdentityRegistered
+    name: Identity Registered
+    domain: identity
+    description: A new identity is registered and its wallet lifecycle opened.
+    payload: { identity: string, name: string, kind: string }
+  - id: WalletVerified
+    name: Wallet Verified
+    domain: identity
+    description: A wallet passed identity verification.
+    payload: { wallet: string, address: string }
+  - id: WalletRevoked
+    name: Wallet Revoked
+    domain: identity
+    description: A wallet was revoked and loses execution standing.
+    payload: { wallet: string }
+
+  # accounts
+  - id: AccountCreated
+    name: Account Created
+    domain: accounts
+    description: An operating account was created in the proposed state.
+    payload: { accountId: string, owner: string, name: string }
+  - id: AccountActivated
+    name: Account Activated
+    domain: accounts
+    description: An account moved to active and may participate in workflows.
+    payload: { accountId: string }
+  - id: AccountFrozen
+    name: Account Frozen
+    domain: accounts
+    description: An account was frozen pending investigation.
+    payload: { accountId: string, reason: string }
+  - id: AccountClosed
+    name: Account Closed
+    domain: accounts
+    description: An account was closed and is no longer usable.
+    payload: { accountId: string, reason: string }
+
+  # payments
+  - id: PaymentOrderCreated
+    name: Payment Order Created
+    domain: payments
+    description: A payment order was created and awaits signature.
+    payload: { orderId: string, payer: string, payee: string, amount: amount, memo: string }
+  - id: PaymentOrderSigned
+    name: Payment Order Signed
+    domain: payments
+    description: A payment order was cryptographically signed by its initiator.
+    payload: { orderId: string, signature: string, signer: string }
+  - id: PaymentOrderAuthorized
+    name: Payment Order Authorized
+    domain: payments
+    description: A signed payment order was authorized for settlement.
+    payload: { orderId: string }
+  - id: PaymentOrderCancelled
+    name: Payment Order Cancelled
+    domain: payments
+    description: A payment order was cancelled before settlement.
+    payload: { orderId: string, reason: string }
+  - id: PaymentOrderRejected
+    name: Payment Order Rejected
+    domain: payments
+    description: A payment order was rejected by authority or failed settlement.
+    payload: { orderId: string, reason: string }
+
+  # settlement
+  - id: SettlementProposed
+    name: Settlement Proposed
+    domain: settlement
+    description: A settlement was proposed for an authorized payment order.
+    payload: { settlementId: string, orderId: string }
+  - id: SettlementStarted
+    name: Settlement Started
+    domain: settlement
+    description: Settlement execution began.
+    payload: { settlementId: string, orderId: string }
+  - id: SettlementExecuted
+    name: Settlement Executed
+    domain: settlement
+    description: Settlement completed and the ledger transfer posted.
+    payload: { settlementId: string, orderId: string, transferId: string, amount: amount }
+  - id: SettlementFailed
+    name: Settlement Failed
+    domain: settlement
+    description: Settlement execution failed; the order is rejected fail-closed.
+    payload: { settlementId: string, orderId: string, reason: string }
+
+  # collateral
+  - id: CollateralPosted
+    name: Collateral Posted
+    domain: collateral
+    description: Collateral was posted to the vault against a position.
+    payload: { positionId: string, accountId: string, amount: amount, exposure: amount }
+  - id: CollateralReleased
+    name: Collateral Released
+    domain: collateral
+    description: Collateral was released back to its owner.
+    payload: { positionId: string, accountId: string, amount: amount }
+  - id: LiquidationInitiated
+    name: Liquidation Initiated
+    domain: collateral
+    description: Liquidation began after utilization breached the constitutional threshold.
+    payload: { positionId: string, reason: string }
+  - id: CollateralLiquidated
+    name: Collateral Liquidated
+    domain: collateral
+    description: Collateral was seized to cover exposure.
+    payload: { positionId: string, treasuryAccount: string, recovered: amount }
+
+  # credit
+  - id: FacilityCreated
+    name: Credit Facility Created
+    domain: credit
+    description: A credit facility was created in the proposed state.
+    payload: { facilityId: string, borrower: string, limit: amount }
+  - id: FacilityActivated
+    name: Credit Facility Activated
+    domain: credit
+    description: A facility is active and may be drawn against.
+    payload: { facilityId: string }
+  - id: FacilityFrozen
+    name: Credit Facility Frozen
+    domain: credit
+    description: A facility was frozen; drawdowns are suspended.
+    payload: { facilityId: string, reason: string }
+  - id: CreditDrawn
+    name: Credit Drawn
+    domain: credit
+    description: Funds were drawn against an active facility, creating an obligation.
+    payload: { facilityId: string, obligationId: string, amount: amount, borrowerAccount: string }
+  - id: CreditRepaid
+    name: Credit Repaid
+    domain: credit
+    description: Funds were repaid against a facility.
+    payload: { facilityId: string, obligationId: string, amount: amount, borrowerAccount: string }
+  - id: FacilityRepaid
+    name: Facility Repaid
+    domain: credit
+    description: A facility was fully repaid and closed out.
+    payload: { facilityId: string }
+  - id: ObligationDefaulted
+    name: Obligation Defaulted
+    domain: credit
+    description: An obligation entered default and may no longer be repaid on standard terms.
+    payload: { obligationId: string, reason: string }
+  - id: ObligationDischarged
+    name: Obligation Discharged
+    domain: credit
+    description: An obligation was settled in full and discharged.
+    payload: { obligationId: string }
+
+  # governance
+  - id: ProposalSubmitted
+    name: Proposal Submitted
+    domain: governance
+    description: A governance proposal entered the active voting state.
+    payload: { proposalId: string, title: string }
+  - id: ProposalVoted
+    name: Proposal Voted
+    domain: governance
+    description: A vote was cast on an active proposal.
+    payload: { proposalId: string, voter: string, vote: string }
+  - id: ProposalPassed
+    name: Proposal Passed
+    domain: governance
+    description: A proposal passed governance resolution.
+    payload: { proposalId: string }
+  - id: ProposalRejected
+    name: Proposal Rejected
+    domain: governance
+    description: A proposal failed governance resolution.
+    payload: { proposalId: string }
+
+  # authz
+  - id: CapabilityGranted
+    name: Capability Granted
+    domain: authz
+    description: A capability was granted to an identity.
+    payload: { identity: string, capability: string, grantedBy: string }
+  - id: CapabilityRevoked
+    name: Capability Revoked
+    domain: authz
+    description: A capability was revoked from an identity.
+    payload: { identity: string, capability: string, revokedBy: string }
+  - id: AuthorizationDenied
+    name: Authorization Denied
+    domain: authz
+    description: A command was denied for missing capability (fail-closed).
+    payload: { identity: string, command: string, missing: string }
+
+  # ledger
+  - id: LedgerAccountCreated
+    name: Ledger Account Created
+    domain: ledger
+    description: A double-entry ledger account was opened at the ledger boundary.
+    payload: { accountId: string, name: string, opening: amount }
+  - id: FundsTransferred
+    name: Funds Transferred
+    domain: ledger
+    description: A double-entry transfer posted on the ledger.
+    payload: { transferId: string, source: string, destination: string, amount: amount, memo: string }
+
+  # web3
+  - id: AttestationCreated
+    name: Attestation Created
+    domain: web3
+    description: An EIP-712 attestation was verified and recorded as system evidence.
+    payload: { attestationId: string, orderId: string, digest: string, signer: string, signature: string }
+
+  # system
+  - id: CommandRejected
+    name: Command Rejected
+    domain: system
+    description: A command was rejected by the kernel (fail-closed evidence).
+    payload: { command: string, actor: string, code: string, reason: string }

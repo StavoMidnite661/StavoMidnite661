@@ -1,0 +1,91 @@
+machines:
+  - id: account
+    entity: Account
+    initial: proposed
+    terminal: [closed]
+    states: [proposed, active, frozen, closed]
+    transitions:
+      - { event: AccountCreated, from: [proposed], to: proposed }
+      - { event: AccountActivated, from: [proposed, frozen], to: active }
+      - { event: AccountFrozen, from: [active], to: frozen }
+      - { event: AccountClosed, from: [active, frozen], to: closed }
+
+  - id: payment_order
+    entity: PaymentOrder
+    initial: pending_signature
+    terminal: [settled, rejected, cancelled]
+    states: [pending_signature, pending_authorization, authorized, settling, settled, rejected, cancelled]
+    transitions:
+      - { event: PaymentOrderCreated, from: [pending_signature], to: pending_signature }
+      - { event: PaymentOrderSigned, from: [pending_signature], to: pending_authorization }
+      - { event: PaymentOrderAuthorized, from: [pending_authorization], to: authorized }
+      - { event: PaymentOrderCancelled, from: [pending_signature, pending_authorization], to: cancelled }
+      - { event: PaymentOrderRejected, from: [pending_signature, pending_authorization, settling], to: rejected }
+      - { event: SettlementStarted, from: [authorized], to: settling }
+      - { event: SettlementExecuted, from: [settling], to: settled }
+
+  - id: settlement
+    entity: Settlement
+    initial: proposed
+    terminal: [executed, failed]
+    states: [proposed, executing, executed, failed]
+    transitions:
+      - { event: SettlementProposed, from: [proposed], to: proposed }
+      - { event: SettlementStarted, from: [proposed], to: executing }
+      - { event: SettlementExecuted, from: [executing], to: executed }
+      - { event: SettlementFailed, from: [executing], to: failed }
+
+  - id: collateral_position
+    entity: CollateralPosition
+    initial: idle
+    terminal: [liquidated, closed]
+    states: [idle, active, liquidating, liquidated, closed]
+    transitions:
+      - { event: CollateralPosted, from: [idle], to: idle }
+      - { event: CollateralPosted, from: [idle], to: active }
+      - { event: CollateralReleased, from: [active], to: closed }
+      - { event: LiquidationInitiated, from: [active], to: liquidating }
+      - { event: CollateralLiquidated, from: [liquidating], to: liquidated }
+
+  - id: credit_facility
+    entity: CreditFacility
+    initial: proposed
+    terminal: [repaid, frozen]
+    states: [proposed, active, frozen, repaid]
+    transitions:
+      - { event: FacilityCreated, from: [proposed], to: proposed }
+      - { event: FacilityActivated, from: [proposed], to: active }
+      - { event: FacilityFrozen, from: [active], to: frozen }
+      - { event: FacilityRepaid, from: [active], to: repaid }
+
+  - id: obligation
+    entity: Obligation
+    initial: issued
+    terminal: [discharged]
+    states: [issued, performing, defaulted, discharged]
+    transitions:
+      - { event: CreditDrawn, from: [issued], to: issued }
+      - { event: CreditDrawn, from: [issued, performing], to: performing }
+      - { event: ObligationDefaulted, from: [performing], to: defaulted }
+      - { event: ObligationDischarged, from: [performing, defaulted], to: discharged }
+
+  - id: governance_proposal
+    entity: GovernanceProposal
+    initial: draft
+    terminal: [passed, rejected]
+    states: [draft, active, passed, rejected]
+    transitions:
+      - { event: ProposalSubmitted, from: [draft], to: draft }
+      - { event: ProposalSubmitted, from: [draft], to: active }
+      - { event: ProposalPassed, from: [active], to: passed }
+      - { event: ProposalRejected, from: [active], to: rejected }
+
+  - id: wallet
+    entity: Wallet
+    initial: created
+    terminal: [revoked]
+    states: [created, verified, revoked]
+    transitions:
+      - { event: IdentityRegistered, from: [created], to: created }
+      - { event: WalletVerified, from: [created], to: verified }
+      - { event: WalletRevoked, from: [created, verified], to: revoked }
